@@ -1,0 +1,27 @@
+#i#!/bin/bash
+#AUTHOR: C. BURN 28/04/16
+
+TOOLCHAIN=$(grep 'arm' README_Kernel.txt | head -1 | awk '{print $2}')
+echo $TOOLCHAIN
+git clone https://android.googlesource.com/platform/prebuilts/gcc/linux-x86/arm/$TOOLCHAIN toolchain
+export ARCH=arm
+export SUBARCH=arm
+export CROSS_COMPILE=`pwd`/toolchain/bin/arm-eabi-
+arm-eabi-gcc -v
+
+CFGFILE=$(grep make build_kernel.sh | head -1 | awk '{print$5}')
+CFG=$(pwd)'/arch/arm/configs/'$CFGFILE
+
+grep '^CONFIG_SECURITY_SELINUX=n' "${CFG}"
+GRC=$?
+
+if [[ $GRC -eq 0 ]] ; then
+   echo "Security Settings OK. Proceeding to Kernel Build..."
+   mkdir output
+   make -C $(pwd) O=output msm8916_sec_defconfig VARIANT_DEFCONFIG=msm8916_sec_gt510lte_eur_defconfig
+   make -C $(pwd) O=output
+   cp output/arch/arm/boot/Image $(pwd)/arch/arm/boot/zImage
+else
+   echo "Please add CONFIG_SECURITY_SELINUX=n into arch/arm/configs/msm8916_sec_defconfig or change it from y to n if it already exists."
+fi
+
